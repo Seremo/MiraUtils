@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>MiraUI</AssemblyName>
+    <RootNamespace>MiraUI</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\Icons\*.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Images\drive.ico" />
+    <None Remove="Images\file.ico" />
+    <None Remove="Images\folder.ico" />
+    <None Remove="Images\icon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Caliburn.Micro" Version="4.0.104-alpha" />
+    <PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="3.6.2" />
+    <PackageReference Include="MahApps.Metro" Version="2.0.0-alpha0660" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controls\" />
+    <Folder Include="Themes\" />
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MiraCore\MiraCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Images\drive.ico" />
+    <Resource Include="Images\file.ico" />
+    <Resource Include="Images\folder.ico" />
+    <Resource Include="Images\icon.png" />
+  </ItemGroup>
+
+</Project>
