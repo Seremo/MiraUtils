@@ -1,29 +1,23 @@
-﻿using Caliburn.Micro;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
+using Caliburn.Micro;
 using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
 using MiraCore.Client;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using Xceed.Wpf.AvalonDock.Layout;
 
 namespace MiraUI.ViewModels
 {
     public class InvertableBool
     {
-        private bool value = false;
-
-        public bool Value { get { return value; } }
-        public bool Invert { get { return !value; } }
 
         public InvertableBool(bool b)
         {
-            value = b;
+            Value = b;
         }
+
+        public bool Value { get; }
+        public bool Invert => !Value;
 
         public static implicit operator InvertableBool(bool b)
         {
@@ -32,44 +26,51 @@ namespace MiraUI.ViewModels
 
         public static implicit operator bool(InvertableBool b)
         {
-            return b.value;
+            return b.Value;
         }
-
     }
     public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
     {
+
+        private InvertableBool _isConnected = false;
+
+        private string _ps4ip;
+
+        public BindableCollection<Screen> _tools;
+
+        public ShellViewModel()
+        {
+            Tools = new BindableCollection<Screen>();
+            Initialize();
+        }
+
         public MiraConnection Connection
         {
             get;
             set;
         }
 
-        private string _ps4ip;
         public string PS4IP
         {
-            get { return _ps4ip; }
+            get => _ps4ip;
             set
             {
                 _ps4ip = value;
                 NotifyOfPropertyChange(() => PS4IP);
             }
         }
-
-        private InvertableBool _isConnected = false;
         public InvertableBool IsConnected
         {
-            get { return _isConnected; }
+            get => _isConnected;
             set
             {
                 _isConnected = value;
                 NotifyOfPropertyChange(() => IsConnected);
             }
         }
-
-        public BindableCollection<Screen> _tools;
         public IObservableCollection<Screen> Tools
         {
-            get { return _tools; }
+            get => _tools;
             set
             {
                 _tools = value as BindableCollection<Screen>;
@@ -77,7 +78,7 @@ namespace MiraUI.ViewModels
             }
         }
 
-        public void ShowTool(ToolViewModel model)
+        public async Task ShowTool(ToolViewModel model)
         {
             if (Tools.Contains(model))
                 model.IsVisible = true;
@@ -86,51 +87,53 @@ namespace MiraUI.ViewModels
             model.IsSelected = true;
         }
 
-        public void ReinitializeTools()
+        public async Task CloseTool(ToolViewModel model)
+        {
+            if (Tools.Contains(model))
+                Tools.Remove(model);
+        }
+
+        public async void ReinitializeTools()
         {
             Tools.Clear();
-            ShowTool(new HomeViewModel());
+            await ShowTool(new HomeViewModel());
         }
 
         public async Task ConnectDialog()
         {
-            var metroWindow = (Application.Current.MainWindow as MetroWindow);
-            string ip = await metroWindow.ShowInputAsync("Connect", "Enter your PS4 IP address:");
-            if (ip != null)
+            var metroWindow = Application.Current.MainWindow as MetroWindow;
+            var ip = await metroWindow.ShowInputAsync("Connect", "Enter your PS4 IP address:");
+            if (ip == null)
+                return;
+            var s_Connection = new MiraConnection(ip);
+            if (s_Connection.Connect())
             {
-                MiraConnection s_Connection = new MiraConnection(ip, 9999);
-                if (s_Connection.Connect())
-                {
-                    Connection = s_Connection;
-                    IsConnected = true;
-                    ShowTool(new FileManagerViewModel(Connection));
-                    ShowTool(new KernelLogsViewModel(ip));
-                    return;
-                }
+                Connection = s_Connection;
+                IsConnected = true;
+                await ShowTool(new KernelLogsViewModel(ip));
+                await ShowTool(new FileManagerViewModel(Connection));
+                await ShowTool(new AppsViewModel(Connection));
             }
-            await TryCloseAsync(true);
         }
 
         public async Task DisconnectDialog()
         {
             if (!IsConnected)
                 return;
-            var metroWindow = (Application.Current.MainWindow as MetroWindow);
-            var result = await metroWindow.ShowMessageAsync("Confirm disconnect", "Are you sure you want to disconnect?", MessageDialogStyle.AffirmativeAndNegative);
+            var metroWindow = Application.Current.MainWindow as MetroWindow;
+            var result = await metroWindow.ShowMessageAsync("Confirm disconnect", "Are you sure you want to disconnect?",
+                MessageDialogStyle.AffirmativeAndNegative);
             if (result == MessageDialogResult.Negative)
                 return;
             Connection.Disconnect();
             IsConnected = false;
             Connection = null;
             ReinitializeTools();
-            await TryCloseAsync(true);
         }
 
-        public ShellViewModel()
+        public async void Initialize()
         {
-            Tools = new BindableCollection<Screen>();
-            ShowTool(new HomeViewModel());
+            await ShowTool(new HomeViewModel());
         }
-
     }
 }

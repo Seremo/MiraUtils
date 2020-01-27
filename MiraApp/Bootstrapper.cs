@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows;
 using Caliburn.Micro;
 using MiraUI.ViewModels;
@@ -10,8 +11,8 @@ namespace MiraUI
         {
             Initialize();
 #if DEBUG
-            System.Diagnostics.PresentationTraceSources.DataBindingSource.Switch.Level = System.Diagnostics.SourceLevels.Critical;
-            System.Diagnostics.PresentationTraceSources.ResourceDictionarySource.Switch.Level = System.Diagnostics.SourceLevels.Critical;
+            PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Critical;
+            PresentationTraceSources.ResourceDictionarySource.Switch.Level = SourceLevels.Critical;
 #endif
         }
 

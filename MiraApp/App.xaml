@@ -9,7 +9,8 @@
                     <local:Bootstrapper x:Key="bootstrapper" />
                 </ResourceDictionary>
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
-                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Dark.Blue.xaml" />
+                <ResourceDictionary
+                    Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Dark.Blue.xaml" />
                 <ResourceDictionary Source="/Xceed.Wpf.AvalonDock.Themes.VS2013;component/DarkTheme.xaml" />
                 <ResourceDictionary Source="/MiraUI;component/Themes/VS2013/DarkTheme.xaml" />
                 <!--<ResourceDictionary Source="/Xceed.Wpf.AvalonDock.Themes.VS2013;component/DarkTheme.xaml" /> / -->

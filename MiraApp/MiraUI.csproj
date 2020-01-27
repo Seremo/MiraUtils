@@ -26,7 +26,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controls\" />
     <Folder Include="Themes\" />
     <Folder Include="Properties\" />
   </ItemGroup>

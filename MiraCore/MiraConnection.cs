@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace MiraCore.Client
 {
@@ -77,18 +78,16 @@ namespace MiraCore.Client
             try
             {
                 // Attempt to connect to the host
-                m_Socket = new TcpClient(Address, Port)
-                {
-                    ReceiveTimeout = 1000 * TimeoutInSeconds,
-                    SendTimeout = 1000 * TimeoutInSeconds,
-
-                    SendBufferSize = MaxBufferSize,
-                    ReceiveBufferSize = MaxBufferSize
-                };
+                m_Socket = new TcpClient();
+                m_Socket.ReceiveTimeout = 1000 * TimeoutInSeconds;
+                m_Socket.SendTimeout = 1000 * TimeoutInSeconds;
+                m_Socket.SendBufferSize = MaxBufferSize;
+                m_Socket.ReceiveBufferSize = MaxBufferSize;
+                m_Socket.Connect(Address, Port);
             }
             catch (Exception p_Exception)
             {
-                Console.WriteLine($"exception: {p_Exception.InnerException}");
+                Console.WriteLine($"exception: {p_Exception.InnerException}");  
                 return false;
             }
 

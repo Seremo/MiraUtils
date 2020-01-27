@@ -1,16 +1,12 @@
-﻿using System.Windows.Controls;
-using System.Windows;
-using Xceed.Wpf.AvalonDock.Layout;
+﻿using System.Windows;
+using System.Windows.Controls;
 using MiraUI.ViewModels;
+using Xceed.Wpf.AvalonDock.Layout;
 
 namespace MiraUI.Docker
 {
-    class PanesTemplateSelector : DataTemplateSelector
+    internal class PanesTemplateSelector : DataTemplateSelector
     {
-        public PanesTemplateSelector()
-        {
-
-        }
 
         public DataTemplate ToolTemplate
         {
@@ -24,14 +20,14 @@ namespace MiraUI.Docker
             set;
         }
 
-        public override System.Windows.DataTemplate SelectTemplate(object item, System.Windows.DependencyObject container)
+        public override DataTemplate SelectTemplate(object item, DependencyObject container)
         {
             var itemAsLayoutContent = item as LayoutContent;
 
             if (item is ToolViewModel)
                 return ToolTemplate;
 
-           // if (item is FileStatsViewModel)
+            // if (item is FileStatsViewModel)
             //    return FileStatsViewTemplate;
 
             return base.SelectTemplate(item, container);

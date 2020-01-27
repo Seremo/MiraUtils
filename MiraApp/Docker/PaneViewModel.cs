@@ -1,7 +1,4 @@
 ﻿using Caliburn.Micro;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MiraUI.Docker
 {
@@ -15,16 +12,14 @@ namespace MiraUI.Docker
 
     public class PaneViewModel : Screen
     {
-        public PaneViewModel()
-        { }
 
 
         #region Title
 
-        private string _title = null;
+        private string _title;
         public string Title
         {
-            get { return _title; }
+            get => _title;
             set
             {
                 if (_title != value)
@@ -39,10 +34,10 @@ namespace MiraUI.Docker
 
         #region ContentId
 
-        private string _contentId = null;
+        private string _contentId;
         public string ContentId
         {
-            get { return _contentId; }
+            get => _contentId;
             set
             {
                 if (_contentId != value)
@@ -57,10 +52,10 @@ namespace MiraUI.Docker
 
         #region IsSelected
 
-        private bool _isSelected = false;
+        private bool _isSelected;
         public bool IsSelected
         {
-            get { return _isSelected; }
+            get => _isSelected;
             set
             {
                 if (_isSelected != value)
@@ -75,10 +70,10 @@ namespace MiraUI.Docker
 
         #region IsActive
 
-        private bool _isActive = false;
+        private bool _isActive;
         public bool IsActive
         {
-            get { return _isActive; }
+            get => _isActive;
             set
             {
                 if (_isActive != value)
@@ -88,6 +83,8 @@ namespace MiraUI.Docker
                 }
             }
         }
+
         #endregion
+
     }
 }

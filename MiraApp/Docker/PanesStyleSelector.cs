@@ -1,10 +1,10 @@
-﻿using System.Windows.Controls;
-using System.Windows;
+﻿using System.Windows;
+using System.Windows.Controls;
 using MiraUI.ViewModels;
 
 namespace MiraUI.Docker
 {
-    class PanesStyleSelector : StyleSelector
+    internal class PanesStyleSelector : StyleSelector
     {
         public Style ToolStyle
         {
@@ -18,12 +18,12 @@ namespace MiraUI.Docker
             set;
         }
 
-        public override System.Windows.Style SelectStyle(object item, System.Windows.DependencyObject container)
+        public override Style SelectStyle(object item, DependencyObject container)
         {
             if (item is ToolViewModel)
                 return ToolStyle;
 
-           // if (item is FileViewModel)
+            // if (item is FileViewModel)
             //    return FileStyle;
 
             return base.SelectStyle(item, container);

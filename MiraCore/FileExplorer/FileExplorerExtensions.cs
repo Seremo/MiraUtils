@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using static MiraCore.Client.MessageHeader;
 
 namespace MiraCore.Client.FileExplorer
@@ -289,6 +291,49 @@ namespace MiraCore.Client.FileExplorer
             }
 
             return s_Stream;
+        }
+
+        public static List<byte> DownloadFileToByteArray(this MiraConnection p_Connection, string p_Path)
+        {
+            List<byte> s_Bytes = new List<byte>();
+            var s_FileHandle = Open(p_Connection, p_Path, (int)OpenOnlyFlags.O_RDONLY, 0);
+            if (s_FileHandle < 0)
+            {
+                return null;
+            }
+
+            var s_Stat = Stat(p_Connection, s_FileHandle);
+            if (s_Stat == null)
+            {
+                return null;
+            }
+
+            var s_ChunkSize = 0x1000;
+            var s_Chunks = s_Stat.Size / s_ChunkSize;
+            var s_Leftover = (int)s_Stat.Size % s_ChunkSize;
+
+            ulong s_Offset = 0;
+            for (var i = 0; i < s_Chunks; ++i)
+            {
+                var l_Data = Read(p_Connection, s_FileHandle, s_Offset, s_ChunkSize);
+                if (l_Data == null)
+                {
+                    return null;
+                }
+                s_Bytes.AddRange(l_Data);
+                // Increment our offset
+                s_Offset += (ulong)l_Data.LongLength;
+            }
+
+            // Write the leftover data
+            var s_Data = Read(p_Connection, s_FileHandle, s_Offset, s_Leftover);
+            if (s_Data == null)
+            {
+                return null;
+            }
+            // Write the leftover
+            s_Bytes.AddRange(s_Data);
+            return s_Bytes;
         }
 
         public static byte[] DecryptSelf(this MiraConnection p_Connection, string p_Path)

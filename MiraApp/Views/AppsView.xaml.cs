@@ -3,11 +3,11 @@
 namespace MiraUI.Views
 {
     /// <summary>
-    ///     Logika interakcji dla klasy FileManagerView.xaml
+    ///     Logika interakcji dla klasy AppsView.xaml
     /// </summary>
-    public partial class FileManagerView : UserControl
+    public partial class AppsView : UserControl
     {
-        public FileManagerView()
+        public AppsView()
         {
             InitializeComponent();
         }

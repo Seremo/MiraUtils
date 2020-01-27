@@ -1,16 +1,14 @@
-﻿using Caliburn.Micro;
-using MiraUI.Docker;
-using Xceed.Wpf.AvalonDock.Layout;
+﻿using MiraUI.Docker;
 
 namespace MiraUI.ViewModels
 {
     public class HomeViewModel : ToolViewModel
     {
         public const string ToolContentId = "HomeTool";
-        public override ToolLocation PreferredLocation => ToolLocation.Bottom;
         public HomeViewModel() : base("Home")
         {
             ContentId = ToolContentId;
         }
+        public override ToolLocation PreferredLocation => ToolLocation.Bottom;
     }
 }

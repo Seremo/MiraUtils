@@ -11,27 +11,27 @@
                 </Grid.ColumnDefinitions>
                 <Border Grid.Column="0" CornerRadius="2,0,0,0">
                     <Path Name="Arrow"
-					      Fill="{DynamicResource ExpanderExGlyph}"
-					      HorizontalAlignment="Center"
-					      VerticalAlignment="Center"
-					      Data="M 0 0 L 0 8 L 4 4 Z"/>
+                          Fill="{DynamicResource ExpanderExGlyph}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          Data="M 0 0 L 0 8 L 4 4 Z" />
                 </Border>
                 <ContentPresenter Grid.Column="1"
-		                          Margin="4" 
-		                          ContentSource="Content" 
-		                          RecognizesAccessKey="True" />
+                                  Margin="4"
+                                  ContentSource="Content"
+                                  RecognizesAccessKey="True" />
             </Grid>
         </Border>
         <ControlTemplate.Triggers>
             <Trigger Property="IsChecked" Value="True">
                 <Setter TargetName="Arrow" Property="Data"
-							Value="M 0 0 L 4 4 L 8 0 Z" />
+                        Value="M 0 0 L 4 4 L 8 0 Z" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Foreground"
-							Value="{DynamicResource ExpanderExDisabledForeground}"/>
+                        Value="{DynamicResource ExpanderExDisabledForeground}" />
                 <Setter TargetName="Arrow" Property="Fill"
-							Value="{DynamicResource ExpanderExDisabledForeground}" />
+                        Value="{DynamicResource ExpanderExDisabledForeground}" />
             </Trigger>
         </ControlTemplate.Triggers>
     </ControlTemplate>
