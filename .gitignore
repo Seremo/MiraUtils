@@ -4,3 +4,15 @@
 *.ide
 *.ide-shm
 *.ide-wal
+*.cache
+*.baml
+MiraApp/obj/Debug/netcoreapp3.1/App.g.cs
+MiraApp/obj/Debug/netcoreapp3.1/App.g.i.cs
+MiraApp/obj/Debug/netcoreapp3.1/GeneratedInternalTypeHelper.g.cs
+MiraApp/obj/Debug/netcoreapp3.1/GeneratedInternalTypeHelper.g.i.cs
+MiraApp/obj/Debug/netcoreapp3.1/MiraUI.AssemblyInfo.cs
+MiraApp/obj/Debug/netcoreapp3.1/Views/AppsView.g.cs
+MiraApp/obj/Debug/netcoreapp3.1/Views/AppsView.g.i.cs
+MiraApp/obj/Debug/netcoreapp3.1/Views/HomeView.g.cs
+MiraApp/obj/Debug/netcoreapp3.1/Views/HomeView.g.i.cs
+MiraCore/obj/Debug/netcoreapp3.1/MiraCore.AssemblyInfo.cs
