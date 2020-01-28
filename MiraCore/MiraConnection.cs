@@ -78,12 +78,14 @@ namespace MiraCore.Client
             try
             {
                 // Attempt to connect to the host
-                m_Socket = new TcpClient();
-                m_Socket.ReceiveTimeout = 1000 * TimeoutInSeconds;
-                m_Socket.SendTimeout = 1000 * TimeoutInSeconds;
-                m_Socket.SendBufferSize = MaxBufferSize;
-                m_Socket.ReceiveBufferSize = MaxBufferSize;
-                m_Socket.Connect(Address, Port);
+                m_Socket = new TcpClient(Address, Port)
+                {
+                    ReceiveTimeout = 1000 * TimeoutInSeconds,
+                    SendTimeout = 1000 * TimeoutInSeconds,
+
+                    SendBufferSize = MaxBufferSize,
+                    ReceiveBufferSize = MaxBufferSize
+                };
             }
             catch (Exception p_Exception)
             {

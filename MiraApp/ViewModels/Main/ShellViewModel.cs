@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using Caliburn.Micro;
@@ -129,6 +130,27 @@ namespace MiraUI.ViewModels
             IsConnected = false;
             Connection = null;
             ReinitializeTools();
+        }
+
+        public async Task ClearCacheDialog()
+        {
+            if (!IsConnected)
+                return;
+            var metroWindow = Application.Current.MainWindow as MetroWindow;
+            var result = await metroWindow.ShowMessageAsync("Confirm delete cache", "Are you sure you want to delete local cache?",
+                MessageDialogStyle.AffirmativeAndNegative);
+            if (result == MessageDialogResult.Negative)
+                return;
+
+            DirectoryInfo di = new DirectoryInfo(Path.GetTempPath() + "\\MiraUtils\\");
+            foreach (FileInfo file in di.GetFiles())
+            {
+                file.Delete();
+            }
+            foreach (DirectoryInfo dir in di.GetDirectories())
+            {
+                dir.Delete(true);
+            }
         }
 
         public async void Initialize()

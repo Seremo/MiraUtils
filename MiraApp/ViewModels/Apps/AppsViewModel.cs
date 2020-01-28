@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -23,7 +24,6 @@ namespace MiraUI.ViewModels
     public class AppsViewModel : ToolViewModel
     {
         public const string ToolContentId = "LoggerTool";
-
         private ObservableCollection<PkgData> _pkgItems;
         public ObservableCollection<PkgData> PkgItems
         {
@@ -43,7 +43,7 @@ namespace MiraUI.ViewModels
             m_Connection = connection;
             Initialize();
         }
-        public override ToolLocation PreferredLocation => ToolLocation.Bottom;
+        public override ToolLocation PreferredLocation => ToolLocation.Left;
         public override double PreferredHeight => base.PreferredHeight;
         public override double PreferredWidth => 650;
 
@@ -72,21 +72,43 @@ namespace MiraUI.ViewModels
 
         public async Task<bool> GetAppsImages(PkgData item)
         {
-            var stream = m_Connection.DownloadFileToByteArray("/user/appmeta/" + item.Title + "/icon0.png");
-            if (stream != null)
+            string CacheFolder = Path.GetTempPath() + "\\MiraUtils\\";
+            string FilePath = CacheFolder + item.Title + ".png";
+            if (!Directory.Exists(CacheFolder))
+                Directory.CreateDirectory(CacheFolder);
+
+            if (File.Exists(FilePath))
             {
                 var bitmap = new BitmapImage();
                 bitmap.BeginInit();
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
                 bitmap.DecodePixelWidth = 100;
                 bitmap.DecodePixelHeight = 100;
-                bitmap.StreamSource = new MemoryStream(stream.ToArray());
+                bitmap.UriSource = new Uri(FilePath);
                 bitmap.EndInit();
                 bitmap.Freeze();
                 item.ImageData = bitmap;
                 return true;
             }
-            return false;
+            else
+            {
+                var stream = m_Connection.DownloadFileToByteArray("/user/appmeta/" + item.Title + "/icon0.png");
+                if (stream != null)
+                {
+                    var bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.DecodePixelWidth = 100;
+                    bitmap.DecodePixelHeight = 100;
+                    bitmap.StreamSource = new MemoryStream(stream.ToArray());
+                    bitmap.EndInit();
+                    bitmap.Freeze();
+                    item.ImageData = bitmap;
+                    File.WriteAllBytes(FilePath, stream.ToArray());
+                    return true;
+                }
+                return false;
+            }
         }
     }
 }

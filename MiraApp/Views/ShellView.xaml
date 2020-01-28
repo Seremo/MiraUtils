@@ -30,6 +30,9 @@
                         <MenuItem Header="Disconnect" IsEnabled="{Binding IsConnected.Value}"
                                   cal:Message.Attach="DisconnectDialog" />
                     </MenuItem>
+                    <MenuItem Header="Settings">
+                        <MenuItem Header="Clear Cache" cal:Message.Attach="ClearCacheDialog" />
+                    </MenuItem>
                 </Menu>
             </StackPanel>
         </mahapps:WindowCommands>
