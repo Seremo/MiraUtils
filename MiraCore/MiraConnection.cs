@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Google.Protobuf;
+using System;
 using System.IO;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -46,10 +48,10 @@ namespace MiraCore.Client
         /// <summary>
         /// Maximum buffer size, this should optimally match the host
         /// </summary>
-        public int MaxBufferSize = 0x8000;
+        public int MaxBufferSize = 0x10000;
 
         // Temporary buffer for holding our data
-        private byte[] m_Buffer;
+        private readonly byte[] m_Buffer;
 
         /// <summary>
         /// Creates a new MiraConnection
@@ -110,78 +112,62 @@ namespace MiraCore.Client
         /// </summary>
         /// <param name="p_OutoingMessage">Outgoing message with all fields set and ready to go</param>
         /// <returns>True on success, false otherwise</returns>
-        public bool SendMessage(Message p_OutoingMessage)
+        public bool SendMessage(RpcTransport p_OutoingMessage)
         {
             // Validate that we are connected
             if (!IsConnected)
                 return false;
 
+            var s_MessageData = p_OutoingMessage.ToByteArray();
+            var s_Buffer = new byte[Marshal.SizeOf<ulong>() + s_MessageData.Length];
+
+            Buffer.BlockCopy(BitConverter.GetBytes((ulong)s_MessageData.Length), 0, s_Buffer, 0, 8);
+            Buffer.BlockCopy(s_MessageData, 0, s_Buffer, 8, s_MessageData.Length);
+
             // Write this, should call serialize which will have header + payload data
             using (var s_Writer = new BinaryWriter(m_Socket.GetStream(), Encoding.ASCII, true))
-                s_Writer.Write(p_OutoingMessage.Serialize());
+                s_Writer.Write(s_Buffer);
 
             return true;
         }
 
-        /// <summary>
-        /// Send a request and get a response type back
-        /// </summary>
-        /// <typeparam name="T">Type of expected response</typeparam>
-        /// <param name="p_Message">Outoing message to send</param>
-        /// <returns>Tuple (Message response, casted/deserialized response type), 
-        /// (ResponseMessage, null) if no payload, 
-        /// (null, null) on error</returns>
-        public (Message, T) SendMessageWithResponse<T>(Message p_Message) where T : MessageSerializable, new()
+        public RpcTransport SendMessageWithResponse(RpcTransport p_Message)
         {
-            // Send the request to the target
             if (!SendMessage(p_Message))
-                return (null, null);
+                return null;
 
-            // Read out the entire response + payload
-            Message s_Message = null;
+            byte[] s_Data = null;
             using (var s_Reader = new BinaryReader(m_Socket.GetStream(), Encoding.ASCII, true))
-                s_Message = new Message(s_Reader);
+            {
+                var s_MessageSize = s_Reader.ReadUInt64();
+                if (s_MessageSize > (ulong)MaxBufferSize)
+                    return null;
 
-            // If there is no payload expected, then return the response message
-            if (s_Message.PayloadLength == 0 || s_Message.Payload.Count == 0)
-                return (s_Message, null);
+                s_Data = s_Reader.ReadBytes((int)s_MessageSize);
+            }
 
-            // Parse out the payload
-            var s_PayloadType = new T();
-            using (var s_Reader = new BinaryReader(new MemoryStream(s_Message.Payload.ToArray())))
-                s_PayloadType.Deserialize(s_Reader);
+            if (s_Data == null)
+                return null;
 
-            // Return both the message, and the parsed payload
-            return (s_Message, s_PayloadType);
+            return RpcTransport.Parser.ParseFrom(s_Data);
         }
 
-        public (Message, T) RecvMessage<T>(Message p_Message) where T : MessageSerializable, new()
+        public RpcTransport RecvMessage()
         {
-            // Read out the entire response + payload
-            Message s_Message = null;
+            byte[] s_Data = null;
             using (var s_Reader = new BinaryReader(m_Socket.GetStream(), Encoding.ASCII, true))
-                s_Message = new Message(s_Reader);
+            {
+                var s_MessageSize = s_Reader.ReadUInt64();
+                if (s_MessageSize > (ulong)MaxBufferSize)
+                    return null;
 
-            // If there is no payload expected, then return the response message
-            if (s_Message.PayloadLength == 0 || s_Message.Payload.Count == 0)
-                return (s_Message, null);
+                s_Data = s_Reader.ReadBytes((int)s_MessageSize);
+            }
 
-            // Parse out the payload
-            var s_PayloadType = new T();
-            using (var s_Reader = new BinaryReader(new MemoryStream(s_Message.Payload.ToArray())))
-                s_PayloadType.Deserialize(s_Reader);
+            if (s_Data == null)
+                return null;
 
-            // Return both the message, and the parsed payload
-            return (s_Message, s_PayloadType);
-        }
-
-        public T ReadSerializable<T>() where T : MessageSerializable, new()
-        {
-            var s_PayloadType = new T();
-            using (var s_Reader = new BinaryReader(m_Socket.GetStream(), Encoding.ASCII, true))
-                s_PayloadType.Deserialize(s_Reader);
-
-            return s_PayloadType;
+            return RpcTransport.Parser.ParseFrom(s_Data);
         }
     }
 }
