@@ -6,6 +6,7 @@ using Caliburn.Micro;
 using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
 using MiraCore.Client;
+using MiraCore.Client.FileExplorer;
 
 namespace MiraUI.ViewModels
 {
@@ -109,9 +110,11 @@ namespace MiraUI.ViewModels
             var s_Connection = new MiraConnection(ip);
             if (s_Connection.Connect())
             {
+                s_Connection.Echo("hello world");
+
                 Connection = s_Connection;
                 IsConnected = true;
-                await ShowTool(new KernelLogsViewModel(ip));
+                //await ShowTool(new KernelLogsViewModel(ip));
                 await ShowTool(new FileManagerViewModel(Connection));
                 await ShowTool(new AppsViewModel(Connection));
             }

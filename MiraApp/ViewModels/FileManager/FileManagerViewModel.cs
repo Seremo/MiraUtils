@@ -10,6 +10,7 @@ using MahApps.Metro.Controls.Dialogs;
 using MiraCore.Client;
 using MiraCore.Client.FileExplorer;
 using MiraUI.Docker;
+using static MiraCore.Client.FileExplorer.FileExplorerExtensions;
 using Application = System.Windows.Application;
 
 namespace MiraUI.ViewModels
@@ -75,7 +76,7 @@ namespace MiraUI.ViewModels
             {
                 var path = p_Path.Remove(p_Path.LastIndexOf('/'), 1);
                 var pathback = path.Substring(0, path.LastIndexOf('/')) + "/";
-                listItems.Add(new FileDetails {FileName = "...", Path = pathback, Type = FileTypes.DT_UNKNOWN});
+                listItems.Add(new FileDetails { FileName = "...", Path = pathback, Type = FileTypes.DT_UNKNOWN });
             }
             var s_Dents = p_Connection.GetDents(p_Path);
             var s_Folders = s_Dents.Where(x => (FileTypes)x.Type == FileTypes.DT_DIR).ToList();
@@ -84,33 +85,33 @@ namespace MiraUI.ViewModels
                 .Where(x => (FileTypes)x.Type != FileTypes.DT_DIR && (FileTypes)x.Type != FileTypes.DT_REG).ToList();
             foreach (var l_Dent in s_Folders)
             {
-                if (l_Dent.NameString == ".." || l_Dent.NameString == ".")
+                if (l_Dent.Name == ".." || l_Dent.Name == ".")
                     continue;
                 var fd = new FileDetails();
-                fd.FileName = l_Dent.NameString;
-                fd.Path = p_Path + l_Dent.NameString + "/";
+                fd.FileName = l_Dent.Name;
+                fd.Path = p_Path + l_Dent.Name + "/";
                 fd.FileImage = "pack://application:,,,/Images/folder.ico";
                 fd.Type = FileTypes.DT_DIR;
                 listItems.Add(fd);
             }
             foreach (var l_Dent in s_Files)
             {
-                if (l_Dent.NameString == ".." || l_Dent.NameString == ".")
+                if (l_Dent.Name == ".." || l_Dent.Name == ".")
                     continue;
                 var fd = new FileDetails();
-                fd.FileName = l_Dent.NameString;
-                fd.Path = p_Path + l_Dent.NameString;
+                fd.FileName = l_Dent.Name;
+                fd.Path = p_Path + l_Dent.Name;
                 fd.FileImage = "pack://application:,,,/Images/file.ico";
                 fd.Type = FileTypes.DT_REG;
                 listItems.Add(fd);
             }
             foreach (var l_Dent in s_Others)
             {
-                if (l_Dent.NameString == ".." || l_Dent.NameString == ".")
+                if (l_Dent.Name == ".." || l_Dent.Name == ".")
                     continue;
                 var fd = new FileDetails();
-                fd.FileName = l_Dent.NameString;
-                fd.Path = p_Path + l_Dent.NameString;
+                fd.FileName = l_Dent.Name;
+                fd.Path = p_Path + l_Dent.Name;
                 fd.FileImage = "pack://application:,,,/Images/drive.ico";
                 fd.Type = FileTypes.DT_SOCK;
                 listItems.Add(fd);
@@ -181,7 +182,7 @@ namespace MiraUI.ViewModels
             var s_DirectoryEntries = p_Connection.GetDents(p_RemoteDir);
             foreach (var l_Entry in s_DirectoryEntries)
             {
-                if (l_Entry.NameString == "." || l_Entry.NameString == "..")
+                if (l_Entry.Name == "." || l_Entry.Name == "..")
                     continue;
 
                 var l_LocalPath = $"{p_LocalDir}/{new string(l_Entry.Name)}";
@@ -209,46 +210,46 @@ namespace MiraUI.ViewModels
 
         public async void DeleteCommand()
         {
-            if (SelectedItem == null)
-                return;
+            //if (SelectedItem == null)
+            //    return;
 
-            var s_Path = SelectedItem.Path;
-            var metroWindow = Application.Current.MainWindow as MetroWindow;
-            var result = await metroWindow.ShowMessageAsync("Confirm delete",
-                $"Are you sure you want to delete ({s_Path})?", MessageDialogStyle.AffirmativeAndNegative);
-            if (result == MessageDialogResult.Negative)
-                return;
-            if (!m_Connection.Unlink(s_Path))
-                await metroWindow.ShowMessageAsync("Error", $"Could not delete ({s_Path})!");
+            //var s_Path = SelectedItem.Path;
+            //var metroWindow = Application.Current.MainWindow as MetroWindow;
+            //var result = await metroWindow.ShowMessageAsync("Confirm delete",
+            //    $"Are you sure you want to delete ({s_Path})?", MessageDialogStyle.AffirmativeAndNegative);
+            //if (result == MessageDialogResult.Negative)
+            //    return;
+            //if (!m_Connection.Unlink(s_Path))
+            //    await metroWindow.ShowMessageAsync("Error", $"Could not delete ({s_Path})!");
         }
 
         public async void DecryptCommand()
         {
-            if (SelectedItem == null)
-                return;
+            //if (SelectedItem == null)
+            //    return;
 
-            var s_Path = SelectedItem.Path;
+            //var s_Path = SelectedItem.Path;
 
-            var metroWindow = Application.Current.MainWindow as MetroWindow;
-            var s_Data = m_Connection.DecryptSelf(s_Path);
-            if (s_Data == null)
-            {
-                await metroWindow.ShowMessageAsync("Error", "Could not decrypt self");
-                return;
-            }
+            //var metroWindow = Application.Current.MainWindow as MetroWindow;
+            //var s_Data = m_Connection.DecryptSelf(s_Path);
+            //if (s_Data == null)
+            //{
+            //    await metroWindow.ShowMessageAsync("Error", "Could not decrypt self");
+            //    return;
+            //}
 
-            var s_SafeFileDialog = new SaveFileDialog
-            {
-                Title = "Save as...",
-                FileName = SelectedItem.FileName,
-                Filter = "All Files (*.*)|*.*"
-            };
+            //var s_SafeFileDialog = new SaveFileDialog
+            //{
+            //    Title = "Save as...",
+            //    FileName = SelectedItem.FileName,
+            //    Filter = "All Files (*.*)|*.*"
+            //};
 
-            if (s_SafeFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                File.WriteAllBytes(s_SafeFileDialog.FileName, s_Data);
-                await metroWindow.ShowMessageAsync("Succses", "Self decrypted");
-            }
+            //if (s_SafeFileDialog.ShowDialog() == DialogResult.OK)
+            //{
+            //    File.WriteAllBytes(s_SafeFileDialog.FileName, s_Data);
+            //    await metroWindow.ShowMessageAsync("Succses", "Self decrypted");
+            //}
         }
 
 
@@ -258,7 +259,7 @@ namespace MiraUI.ViewModels
             public string FileImage { get; set; }
             public string FileCreation { get; set; }
             public string Path { get; set; }
-            public FileTypes Type { get; set; }
+            public FileExplorerExtensions.FileTypes Type { get; set; }
         }
     }
 }

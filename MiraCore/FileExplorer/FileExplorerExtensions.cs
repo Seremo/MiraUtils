@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Google.Protobuf;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,6 +19,19 @@ namespace MiraCore.Client.FileExplorer
             O_ACCMODE = 3
         }
 
+        public enum FileTypes : byte
+        {
+            DT_UNKNOWN = 0,
+            DT_FIFO = 1,
+            DT_CHR = 2,
+            DT_DIR = 4,
+            DT_BLK = 6,
+            DT_REG = 8,
+            DT_LNK = 10,
+            DT_SOCK = 12,
+            DT_WHT = 14
+        }
+
         public const int c_MaxBufferLength = 0x1000;
         public const int c_MaxPathLength = 0x400;
         public const int c_MaxNameLength = 255;
@@ -30,17 +44,32 @@ namespace MiraCore.Client.FileExplorer
             if (string.IsNullOrWhiteSpace(p_Path))
                 return -1;
 
-            var s_RequestMessage = new Message(
-                MessageCategory.File,
-                (uint)FileExplorerCommands.FileExplorer_Open,
-                true,
-                new FileExplorerOpenRequest(p_Path, p_Flags, p_Mode).Serialize());
+            var s_Transport = new RpcTransport
+            {
+                Header = new RpcHeader()
+                {
+                    Category = RpcCategory.File,
+                    Error = 0,
+                    IsRequest = true,
+                    Magic = c_Magic,
+                    Type = (uint)FileExplorerCommands.FileExplorer_Open
+                },
+                Data = ByteString.CopyFrom
+                (
+                    new FmOpenRequest
+                    {
+                        Path = p_Path,
+                        Flags = p_Flags,
+                        Mode = p_Mode
+                    }.ToByteArray()
+                )
+            };
 
-            var (s_Response, s_Payload) = p_Connection.SendMessageWithResponse<FileExplorerOpenResponse>(s_RequestMessage);
+            var s_Response = p_Connection.SendMessageWithResponse(s_Transport);
             if (s_Response == null)
                 return -1;
 
-            return s_Response.Error;
+            return (int)s_Response.Header.Error;
         }
 
         public static void Close(this MiraConnection p_Connection, int p_Handle)
@@ -51,18 +80,27 @@ namespace MiraCore.Client.FileExplorer
             if (p_Handle < 0)
                 return;
 
-            var s_RequestMessage = new Message(
-                MessageCategory.File,
-                (uint)FileExplorerCommands.FileExplorer_Close,
-                true,
-                new FileExplorerCloseRequest
+            var s_Transport = new RpcTransport
+            {
+                Header = new RpcHeader()
                 {
-                    Handle = p_Handle
-                }.Serialize());
+                    Category = RpcCategory.File,
+                    Error = 0,
+                    IsRequest = true,
+                    Magic = c_Magic,
+                    Type = (uint)FileExplorerCommands.FileExplorer_Close
+                },
+                Data = ByteString.CopyFrom
+                (
+                    new FmCloseRequest
+                    {
+                        Handle = p_Handle
+                    }.ToByteArray()
+                )
+            };
 
-            var (s_Response, s_Payload) = p_Connection.SendMessageWithResponse<FileExplorerCloseResponse>(s_RequestMessage);
-            if (s_Response == null)
-                return;
+            // We don't care about the response
+            p_Connection.SendMessageWithResponse(s_Transport);
         }
 
         public static byte[] Read(this MiraConnection p_Connection, int p_Handle, ulong p_Offset, int p_Count)
@@ -73,30 +111,36 @@ namespace MiraCore.Client.FileExplorer
             if (p_Handle < 0)
                 return null;
 
-            var s_RequestMessage = new Message(
-                MessageCategory.File,
-                (uint)FileExplorerCommands.FileExplorer_Read,
-                true,
-                new FileExplorerReadRequest
+            var s_Transport = new RpcTransport
+            {
+                Header = new RpcHeader()
                 {
-                    Handle = p_Handle,
-                    Count = p_Count
-                }.Serialize());
+                    Category = RpcCategory.File,
+                    Error = 0,
+                    IsRequest = true,
+                    Magic = c_Magic,
+                    Type = (uint)FileExplorerCommands.FileExplorer_Read
+                },
+                Data = ByteString.CopyFrom
+                (
+                    // TODO: Add offset
+                    new FmReadRequest
+                    {
+                        Handle = p_Handle,
+                        Size = (uint)p_Count
+                    }.ToByteArray()
+                )
+            };
 
-            var (s_Response, s_Payload) = p_Connection.SendMessageWithResponse<FileExplorerReadResponse>(s_RequestMessage);
+            var s_ResponseData = p_Connection.SendMessageWithResponse(s_Transport);
+            if (s_ResponseData == null)
+                return null;
+
+            var s_Response = FmReadResponse.Parser.ParseFrom(s_ResponseData.Data);
             if (s_Response == null)
                 return null;
 
-            if (s_Response.Error < 0)
-                return null;
-
-            if (s_Payload.Data == null)
-                return null;
-
-            var s_FinalData = new byte[s_Payload.Count];
-            Buffer.BlockCopy(s_Payload.Data, 0, s_FinalData, 0, s_Payload.Count);
-
-            return s_FinalData;
+            return s_Response.Data.ToArray();
         }
 
         public static bool Write(this MiraConnection p_Connection, int p_Handle, byte[] p_Data)
@@ -107,64 +151,73 @@ namespace MiraCore.Client.FileExplorer
             if (p_Handle < 0)
                 return false;
 
-            var s_RequestMessage = new Message(
-                MessageCategory.File,
-                (uint)FileExplorerCommands.FileExplorer_Write,
-                true,
-                new FileExplorerWriteRequest
+            var s_Transport = new RpcTransport
+            {
+                Header = new RpcHeader()
                 {
-                    Data = p_Data,
-                    Count = p_Data.Length,
-                    Handle = p_Handle
-                }.Serialize());
+                    Category = RpcCategory.File,
+                    Error = 0,
+                    IsRequest = true,
+                    Magic = c_Magic,
+                    Type = (uint)FileExplorerCommands.FileExplorer_Write
+                },
+                Data = ByteString.CopyFrom
+                (
+                    // TODO: Add offset
+                    new FmWriteRequest
+                    {
+                        Handle = p_Handle,
+                        Data = ByteString.CopyFrom(p_Data)
+                    }.ToByteArray()
+                )
+            };
 
-            var (s_Response, s_Payload) = p_Connection.SendMessageWithResponse<FileExplorerWriteResponse>(s_RequestMessage);
-            if (s_Response == null)
+            var s_ResponseTransport = p_Connection.SendMessageWithResponse(s_Transport);
+            if (s_ResponseTransport == null)
                 return false;
 
-            return s_Response.Error >= 0;
+            return s_ResponseTransport.Header.Error >= 0;
         }
 
-        public static List<FileExplorerDent> GetDents(this MiraConnection p_Connection, string p_Path)
+        public static List<FmDent> GetDents(this MiraConnection p_Connection, string p_Path)
         {
-            var s_DentList = new List<FileExplorerDent>();
-
             if (p_Connection == null)
-                return s_DentList;
+                return new List<FmDent>();
 
             if (string.IsNullOrWhiteSpace(p_Path))
-                return s_DentList;
+                return new List<FmDent>();
 
-            var s_Request = new Message(
-                MessageCategory.File,
-                (uint)FileExplorerCommands.FileExplorer_GetDents,
-                true,
-                new FileExplorerGetdentsRequest(p_Path).Serialize());
-
-            p_Connection.SendMessage(s_Request);
-
-            do
+            var s_Transport = new RpcTransport
             {
-                var (s_Response, s_Payload) = p_Connection.RecvMessage<FileExplorerGetdentsResponse>(s_Request);
-                if (s_Response == null || s_Response?.Error < 0 || s_Payload == null)
-                    return s_DentList;
+                Header = new RpcHeader()
+                {
+                    Category = RpcCategory.File,
+                    Error = 0,
+                    IsRequest = true,
+                    Magic = c_Magic,
+                    Type = (uint)FileExplorerCommands.FileExplorer_GetDents
+                },
+                Data = ByteString.CopyFrom
+                (
+                    new FmGetDentsRequest
+                    {
+                        Path = p_Path
+                    }.ToByteArray()
+                )
+            };
 
-                var s_DentIndex = s_Payload.DentIndex;
-                if (s_DentIndex == ulong.MaxValue)
-                    break;
+            var s_ResponseTransport = p_Connection.SendMessageWithResponse(s_Transport);
+            if (s_ResponseTransport == null)
+                return new List<FmDent>();
 
-                if (new string(s_Payload.Dent.Name) == "." ||
-                    new string(s_Payload.Dent.Name) == "..")
-                    continue;
+            var s_Response = FmGetDentsResponse.Parser.ParseFrom(s_ResponseTransport.Data);
+            if (s_Response == null)
+                return new List<FmDent>();
 
-                s_DentList.Add(s_Payload.Dent);
-            }
-            while (true);
-            
-            return s_DentList;
+            return s_Response.Dents.ToList();
         }
 
-        public static FileExplorerStat Stat(this MiraConnection p_Connection, string p_Path)
+        public static FmStatResponse Stat(this MiraConnection p_Connection, string p_Path)
         {
             if (p_Connection == null)
                 return null;
@@ -183,7 +236,7 @@ namespace MiraCore.Client.FileExplorer
             return s_Stat;
         }
 
-        public static FileExplorerStat Stat(this MiraConnection p_Connection, int p_Handle)
+        public static FmStatResponse Stat(this MiraConnection p_Connection, int p_Handle)
         {
             if (p_Connection == null)
                 return null;
@@ -191,20 +244,30 @@ namespace MiraCore.Client.FileExplorer
             if (p_Handle < 0)
                 return null;
 
-            var s_Request = new Message(
-                MessageCategory.File,
-                (uint)FileExplorerCommands.FileExplorer_Stat,
-                true,
-                new FileExplorerStatRequest(p_Handle).Serialize());
+            var s_Transport = new RpcTransport
+            {
+                Header = new RpcHeader()
+                {
+                    Category = RpcCategory.File,
+                    Error = 0,
+                    IsRequest = true,
+                    Magic = c_Magic,
+                    Type = (uint)FileExplorerCommands.FileExplorer_Stat
+                },
+                Data = ByteString.CopyFrom
+                (
+                    new FmStatRequest
+                    {
+                        Handle = p_Handle,
+                    }.ToByteArray()
+                )
+            };
 
-            var (s_Response, s_Payload) = p_Connection.SendMessageWithResponse<FileExplorerStat>(s_Request);
-            if (s_Response == null)
+            var s_ResponseTransport = p_Connection.SendMessageWithResponse(s_Transport);
+            if (s_ResponseTransport == null)
                 return null;
 
-            if (s_Response.Error < 0)
-                return null;
-
-            return s_Payload;
+            return FmStatResponse.Parser.ParseFrom(s_ResponseTransport.Data);
         }
 
         public static bool Echo(this MiraConnection p_Connection, string p_Message)
@@ -218,13 +281,26 @@ namespace MiraCore.Client.FileExplorer
             if (p_Message.Length > ushort.MaxValue)
                 return false;
 
-            var s_Message = new Message(
-                MessageCategory.File, 
-                (uint)FileExplorerCommands.FileExplorer_Echo, 
-                true,
-                new FileExplorerEcho(p_Message).Serialize());
+            var s_Transport = new RpcTransport
+            {
+                Header = new RpcHeader()
+                {
+                    Category = RpcCategory.File,
+                    Error = 0,
+                    IsRequest = true,
+                    Magic = c_Magic,
+                    Type = (uint)FileExplorerCommands.FileExplorer_Echo
+                },
+                Data = ByteString.CopyFrom
+                (
+                    new FmEchoRequest
+                    {
+                        Message = p_Message
+                    }.ToByteArray()
+                )
+            };
 
-            return p_Connection.SendMessage(s_Message);
+            return p_Connection.SendMessage(s_Transport);
         }
 
         public static FileStream DownloadFile(this MiraConnection p_Connection, string p_Path, string p_OutputPath, Action<int, bool> p_StatusCallback = null)
@@ -245,9 +321,9 @@ namespace MiraCore.Client.FileExplorer
                 return null;
             }
 
-            var s_ChunkSize = 0x1000;
-            var s_Chunks = s_Stat.Size / s_ChunkSize;
-            var s_Leftover = (int)s_Stat.Size % s_ChunkSize;
+            var s_ChunkSize = 0x4000;
+            var s_Chunks = s_Stat.StSize / s_ChunkSize;
+            var s_Leftover = (int)s_Stat.StSize % s_ChunkSize;
 
             ulong s_Offset = 0;
 
@@ -269,7 +345,7 @@ namespace MiraCore.Client.FileExplorer
                     s_Offset += (ulong)l_Data.LongLength;
 
                     // Calculate and update status
-                    p_StatusCallback?.Invoke((int)(((float)s_Offset / (float)s_Stat.Size) * 100), false);
+                    p_StatusCallback?.Invoke((int)(((float)s_Offset / (float)s_Stat.StSize) * 100), false);
                 }
 
                 // Write the leftover data
@@ -287,7 +363,7 @@ namespace MiraCore.Client.FileExplorer
                 s_Offset += (ulong)s_Data.LongLength;
 
                 // Calculate and update status
-                p_StatusCallback?.Invoke((int)(((float)s_Offset / (float)s_Stat.Size) * 100), false);
+                p_StatusCallback?.Invoke((int)(((float)s_Offset / (float)s_Stat.StSize) * 100), false);
             }
 
             return s_Stream;
@@ -308,9 +384,9 @@ namespace MiraCore.Client.FileExplorer
                 return null;
             }
 
-            var s_ChunkSize = 0x1000;
-            var s_Chunks = s_Stat.Size / s_ChunkSize;
-            var s_Leftover = (int)s_Stat.Size % s_ChunkSize;
+            var s_ChunkSize = 0x4000;
+            var s_Chunks = s_Stat.StSize / s_ChunkSize;
+            var s_Leftover = (int)s_Stat.StSize % s_ChunkSize;
 
             ulong s_Offset = 0;
             for (var i = 0; i < s_Chunks; ++i)
@@ -338,45 +414,46 @@ namespace MiraCore.Client.FileExplorer
 
         public static byte[] DecryptSelf(this MiraConnection p_Connection, string p_Path)
         {
-            if(p_Connection == null)
+            if (p_Connection == null)
                 return null;
 
             if (p_Path.Length > FileExplorerExtensions.c_MaxPathLength)
                 return null;
 
-            var s_Request = new Message(
-                MessageCategory.File,
-                (uint)FileExplorerCommands.FileExplorer_DecryptSelf,
-                true,
-                new FileExplorerDecryptSelfRequest(p_Path).Serialize());
+            throw new NotImplementedException();
+            //var s_Request = new Message(
+            //    MessageCategory.File,
+            //    (uint)FileExplorerCommands.FileExplorer_DecryptSelf,
+            //    true,
+            //    new FileExplorerDecryptSelfRequest(p_Path).Serialize());
 
-            p_Connection.SendMessage(s_Request);
+            //p_Connection.SendMessage(s_Request);
 
-            var s_ResponseList = new List<FileExplorerDecryptSelfResponse>();
-            do
-            {
-                var (s_Response, s_Payload) = p_Connection.RecvMessage<FileExplorerDecryptSelfResponse>(s_Request);
-                if (s_Response == null || s_Response?.Error < 0 || s_Payload == null)
-                    return null;
+            //var s_ResponseList = new List<FileExplorerDecryptSelfResponse>();
+            //do
+            //{
+            //    var (s_Response, s_Payload) = p_Connection.RecvMessage<FileExplorerDecryptSelfResponse>(s_Request);
+            //    if (s_Response == null || s_Response?.Error < 0 || s_Payload == null)
+            //        return null;
 
-                var s_ChunkIndex = s_Payload.Index;
-                if (s_ChunkIndex == ulong.MaxValue)
-                    break;
-                
-                s_ResponseList.Add(s_Payload);
-            }
-            while (true);
+            //    var s_ChunkIndex = s_Payload.Index;
+            //    if (s_ChunkIndex == ulong.MaxValue)
+            //        break;
 
-            using (var s_Writer = new BinaryWriter(new MemoryStream()))
-            {
-                for (var i = 0; i < s_ResponseList.Count; ++i)
-                {
-                    s_Writer.Seek((int)s_ResponseList[i].Offset, SeekOrigin.Begin);
-                    s_Writer.Write(s_ResponseList[i].Data);
-                }
+            //    s_ResponseList.Add(s_Payload);
+            //}
+            //while (true);
 
-                return ((MemoryStream)s_Writer.BaseStream).ToArray();
-            }
+            //using (var s_Writer = new BinaryWriter(new MemoryStream()))
+            //{
+            //    for (var i = 0; i < s_ResponseList.Count; ++i)
+            //    {
+            //        s_Writer.Seek((int)s_ResponseList[i].Offset, SeekOrigin.Begin);
+            //        s_Writer.Write(s_ResponseList[i].Data);
+            //    }
+
+            //    return ((MemoryStream)s_Writer.BaseStream).ToArray();
+            //}
         }
 
         public static byte[] DownloadFile(this MiraConnection p_Connection, string p_Path, Action<int, bool> p_StatusCallback = null)
@@ -396,8 +473,8 @@ namespace MiraCore.Client.FileExplorer
             }
 
             var s_ChunkSize = 0x1000;
-            var s_Chunks = s_Stat.Size / s_ChunkSize;
-            var s_Leftover = (int)s_Stat.Size % s_ChunkSize;
+            var s_Chunks = s_Stat.StSize / s_ChunkSize;
+            var s_Leftover = (int)s_Stat.StSize % s_ChunkSize;
 
             ulong s_Offset = 0;
 
@@ -420,7 +497,7 @@ namespace MiraCore.Client.FileExplorer
                     s_Offset += (ulong)l_Data.LongLength;
 
                     // Calculate and update status
-                    p_StatusCallback?.Invoke((int)(((float)s_Offset / (float)s_Stat.Size) * 100), false);
+                    p_StatusCallback?.Invoke((int)(((float)s_Offset / (float)s_Stat.StSize) * 100), false);
                 }
 
                 // Write the leftover data
@@ -438,7 +515,7 @@ namespace MiraCore.Client.FileExplorer
                 s_Offset += (ulong)s_Data.LongLength;
 
                 // Calculate and update status
-                p_StatusCallback?.Invoke((int)(((float)s_Offset / (float)s_Stat.Size) * 100), false);
+                p_StatusCallback?.Invoke((int)(((float)s_Offset / (float)s_Stat.StSize) * 100), false);
 
                 s_ReturnData = ((MemoryStream)s_Writer.BaseStream).ToArray();
             }
@@ -457,13 +534,14 @@ namespace MiraCore.Client.FileExplorer
             if (p_Path.Length > c_MaxPathLength)
                 return false;
 
-            var s_Message = new Message(
-                MessageCategory.File,
-                (uint)FileExplorerCommands.FileExplorer_Unlink,
-                true,
-                new FileExplorerUnlinkRequest(p_Path).Serialize());
+            throw new NotImplementedException();
+            //var s_Message = new Message(
+            //    MessageCategory.File,
+            //    (uint)FileExplorerCommands.FileExplorer_Unlink,
+            //    true,
+            //    new FileExplorerUnlinkRequest(p_Path).Serialize());
 
-            return p_Connection.SendMessage(s_Message);
+            //return p_Connection.SendMessage(s_Message);
         }
     }
 }

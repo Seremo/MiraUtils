@@ -10,6 +10,7 @@ using System.Windows.Threading;
 using MiraCore.Client;
 using MiraCore.Client.FileExplorer;
 using MiraUI.Docker;
+using static MiraCore.Client.FileExplorer.FileExplorerExtensions;
 
 namespace MiraUI.ViewModels
 {
@@ -49,7 +50,7 @@ namespace MiraUI.ViewModels
 
         public async void Initialize()
         {
-            await Task.Run(async() => await GetAppsList());
+            await Task.Run(() => GetAppsList());
         }
 
         public async Task GetAppsList()
@@ -61,10 +62,10 @@ namespace MiraUI.ViewModels
             var s_Folders = s_Dents.Where(x => (FileTypes)x.Type == FileTypes.DT_DIR).ToList();
             foreach (var l_Dent in s_Folders)
             {
-                if (l_Dent.NameString == ".." || l_Dent.NameString == ".")
+                if (l_Dent.Name == ".." || l_Dent.Name == ".")
                     continue;
                 var fd = new PkgData();
-                fd.Title = l_Dent.NameString;
+                fd.Title = l_Dent.Name;
                 if (await GetAppsImages(fd))
                     await Application.Current.Dispatcher.BeginInvoke(() => { PkgItems.Add(fd); });
             }
